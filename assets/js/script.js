@@ -1,38 +1,26 @@
 'use strict';
 
-
-
 /**
  * PRELOAD
- * 
- * loading will be end after document is loaded
  */
-
 const preloader = document.querySelector("[data-preaload]");
-
 window.addEventListener("load", function () {
   preloader.classList.add("loaded");
   document.body.classList.add("loaded");
 });
 
-
-
 /**
- * add event listener on multiple elements
+ * ADD EVENT ON MULTIPLE ELEMENTS
  */
-
 const addEventOnElements = function (elements, eventType, callback) {
   for (let i = 0, len = elements.length; i < len; i++) {
     elements[i].addEventListener(eventType, callback);
   }
-}
-
-
+};
 
 /**
- * NAVBAR
+ * NAVBAR TOGGLE
  */
-
 const navbar = document.querySelector("[data-navbar]");
 const navTogglers = document.querySelectorAll("[data-nav-toggler]");
 const overlay = document.querySelector("[data-overlay]");
@@ -41,49 +29,33 @@ const toggleNavbar = function () {
   navbar.classList.toggle("active");
   overlay.classList.toggle("active");
   document.body.classList.toggle("nav-active");
-}
+};
 
 addEventOnElements(navTogglers, "click", toggleNavbar);
 
-
-
 /**
- * HEADER & BACK TOP BTN
+ * HEADER & BACK TO TOP BUTTON
  */
-
 const header = document.querySelector("[data-header]");
 const backTopBtn = document.querySelector("[data-back-top-btn]");
-
 let lastScrollPos = 0;
 
 const hideHeader = function () {
   const isScrollBottom = lastScrollPos < window.scrollY;
-  if (isScrollBottom) {
-    header.classList.add("hide");
-  } else {
-    header.classList.remove("hide");
-  }
-
+  header.classList.toggle("hide", isScrollBottom);
   lastScrollPos = window.scrollY;
-}
+};
 
 window.addEventListener("scroll", function () {
-  if (window.scrollY >= 50) {
-    header.classList.add("active");
-    backTopBtn.classList.add("active");
-    hideHeader();
-  } else {
-    header.classList.remove("active");
-    backTopBtn.classList.remove("active");
-  }
+  const isActive = window.scrollY >= 50;
+  header.classList.toggle("active", isActive);
+  backTopBtn.classList.toggle("active", isActive);
+  hideHeader();
 });
-
-
 
 /**
  * HERO SLIDER
  */
-
 const heroSlider = document.querySelector("[data-hero-slider]");
 const heroSliderItems = document.querySelectorAll("[data-hero-slider-item]");
 const heroSliderPrevBtn = document.querySelector("[data-prev-btn]");
@@ -96,75 +68,73 @@ const updateSliderPos = function () {
   lastActiveSliderItem.classList.remove("active");
   heroSliderItems[currentSlidePos].classList.add("active");
   lastActiveSliderItem = heroSliderItems[currentSlidePos];
-}
+};
 
 const slideNext = function () {
-  if (currentSlidePos >= heroSliderItems.length - 1) {
-    currentSlidePos = 0;
-  } else {
-    currentSlidePos++;
-  }
-
+  currentSlidePos = (currentSlidePos + 1) % heroSliderItems.length;
   updateSliderPos();
-}
-
-heroSliderNextBtn.addEventListener("click", slideNext);
+};
 
 const slidePrev = function () {
-  if (currentSlidePos <= 0) {
-    currentSlidePos = heroSliderItems.length - 1;
-  } else {
-    currentSlidePos--;
-  }
-
+  currentSlidePos = (currentSlidePos - 1 + heroSliderItems.length) % heroSliderItems.length;
   updateSliderPos();
-}
+};
 
+heroSliderNextBtn.addEventListener("click", slideNext);
 heroSliderPrevBtn.addEventListener("click", slidePrev);
 
-/**
- * auto slide
- */
-
+// Auto Slide
 let autoSlideInterval;
-
 const autoSlide = function () {
-  autoSlideInterval = setInterval(function () {
-    slideNext();
-  }, 7000);
-}
+  autoSlideInterval = setInterval(slideNext, 7000);
+};
 
-addEventOnElements([heroSliderNextBtn, heroSliderPrevBtn], "mouseover", function () {
-  clearInterval(autoSlideInterval);
-});
-
+addEventOnElements([heroSliderNextBtn, heroSliderPrevBtn], "mouseover", () => clearInterval(autoSlideInterval));
 addEventOnElements([heroSliderNextBtn, heroSliderPrevBtn], "mouseout", autoSlide);
-
 window.addEventListener("load", autoSlide);
 
-
+// Swipe Support for Slider
+let startX;
+heroSlider.addEventListener("touchstart", (e) => startX = e.touches[0].clientX);
+heroSlider.addEventListener("touchend", (e) => {
+  const endX = e.changedTouches[0].clientX;
+  if (startX - endX > 50) slideNext();
+  else if (endX - startX > 50) slidePrev();
+});
 
 /**
  * PARALLAX EFFECT
  */
-
 const parallaxItems = document.querySelectorAll("[data-parallax-item]");
-
 let x, y;
 
 window.addEventListener("mousemove", function (event) {
-
-  x = (event.clientX / window.innerWidth * 10) - 5;
-  y = (event.clientY / window.innerHeight * 10) - 5;
-
-  // reverse the number eg. 20 -> -20, -5 -> 5
-  x = x - (x * 2);
-  y = y - (y * 2);
+  x = ((event.clientX / window.innerWidth) * 10 - 5) * -1;
+  y = ((event.clientY / window.innerHeight) * 10 - 5) * -1;
 
   for (let i = 0, len = parallaxItems.length; i < len; i++) {
-    x = x * Number(parallaxItems[i].dataset.parallaxSpeed);
-    y = y * Number(parallaxItems[i].dataset.parallaxSpeed);
-    parallaxItems[i].style.transform = `translate3d(${x}px, ${y}px, 0px)`;
+    const speed = Number(parallaxItems[i].dataset.parallaxSpeed);
+    parallaxItems[i].style.transform = `translate3d(${x * speed}px, ${y * speed}px, 0px)`;
   }
+});
 
+/**
+ * DARK/LIGHT MODE TOGGLE
+ */
+const themeToggleBtn = document.querySelector("[data-theme-toggle]");
+const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+const setTheme = (mode) => document.documentElement.setAttribute("data-theme", mode);
+
+if (prefersDark) setTheme("dark");
+
+themeToggleBtn?.addEventListener("click", () => {
+  const currentTheme = document.documentElement.getAttribute("data-theme");
+  setTheme(currentTheme === "dark" ? "light" : "dark");
+});
+
+/**
+ * ANIMATE ON SCROLL (AOS) INIT
+ */
+window.addEventListener("load", () => {
+  if (window.AOS) AOS.init({ duration: 1000, once: true });
 });
